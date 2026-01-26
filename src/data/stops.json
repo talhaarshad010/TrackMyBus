@@ -1,0 +1,16 @@
+ [
+  { "id": 1, "name": "Drigh Road", "lat": 24.887184, "lng": 67.127719 },
+  { "id": 2, "name": "Colony Gate", "lat": 24.887034, "lng": 67.149645},    
+  { "id": 3, "name": "Wireless Gate", "lat": 24.885495, "lng": 67.167957 },
+  { "id": 4, "name": "Kala Board", "lat": 24.882260, "lng": 67.182261 },
+  { "id": 5, "name": "Murghi Khana", "lat": 24.862039, "lng": 67.206645 },
+  { "id": 6, "name": "QuaidaBaad", "lat": 24.854921, "lng": 67.215106 },
+  { "id": 7, "name": "manzil pump", "lat": 24.854951, "lng": 67.229063 },
+  { "id": 8, "name": "Bhens colony", "lat": 24.855943, "lng": 67.257979},
+  { "id": 9, "name": "Fast University", "lat": 24.857248, "lng": 67.26438},
+  { "id": 10, "name": "Razzaqabad", "lat": 24.864858, "lng": 67.294308},
+  { "id": 11, "name": "Port Qasim Main Round about", "lat": 24.866272, "lng": 67.300072},
+  { "id": 12, "name": "Gulshan-e-hadeed", "lat": 24.861589, "lng": 67.351055},
+  { "id": 13, "name": "Sassi Toll Plaza", "lat": 24.854619, "lng": 67.413472},
+  { "id": 14, "name": "Szabist Gharo University", "lat": 24.774311, "lng": 67.546285}
+]

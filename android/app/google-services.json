@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "413404359475",
+    "firebase_url": "https://trackmybus-586f0-default-rtdb.firebaseio.com",
+    "project_id": "trackmybus-586f0",
+    "storage_bucket": "trackmybus-586f0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413404359475:android:a641c452e8384fe5096c46",
+        "android_client_info": {
+          "package_name": "com.trackmybus"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "413404359475-ma6euns8o2sh3dgo7h9aglnb4t8tkm05.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr8LqwU1Px-jm-GUodasJUxqyL2VRphLI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "413404359475-ma6euns8o2sh3dgo7h9aglnb4t8tkm05.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
