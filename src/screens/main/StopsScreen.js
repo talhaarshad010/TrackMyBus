@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { getDistance } from 'geolib';
-import stopsData from '../../data/stops.js';
+import { STOPS } from '../../data/stops';
 
 const DEFAULT_LOCATION = {
   latitude: 24.8607,
@@ -18,11 +18,13 @@ const DEFAULT_LOCATION = {
 
 const StopsScreen = () => {
   const [search, setSearch] = useState('');
-  const [stops, setStops] = useState(stopsData);
+  const [stops, setStops] = useState(STOPS);
+
+  console.log('dsd', STOPS);
 
   // ✅ No GPS – safe
   const findNearbyStops = () => {
-    const updated = stopsData
+    const updated = stops
       .map(stop => ({
         ...stop,
         distance: getDistance(DEFAULT_LOCATION, {
@@ -35,7 +37,7 @@ const StopsScreen = () => {
     setStops(updated);
   };
 
-  const filteredStops = stops.filter(stop =>
+  const filteredStops = (stops || []).filter(stop =>
     stop.name.toLowerCase().includes(search.toLowerCase()),
   );
 
