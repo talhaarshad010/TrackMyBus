@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { getDistance } from 'geolib';
-import stopsData from '../../data/stops.json';
+import stopsData from '../../data/stops.js';
 
 const DEFAULT_LOCATION = {
   latitude: 24.8607,

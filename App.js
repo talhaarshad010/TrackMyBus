@@ -1,88 +1,49 @@
-// import React, { useEffect, useState } from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import auth from '@react-native-firebase/auth';
-// import database from '@react-native-firebase/database';
-
-// import AuthStack from './src/navigation/AuthStack';
-// import UserStack from './src/navigation/UserStack';
-// import RepStack from './src/navigation/RepStack';
-
-// import AppLoader from './src/components/AppLoader';
-// import Toast from 'react-native-toast-message';
-
-// export default function App() {
-//   const [authState, setAuthState] = useState(null);
-
-//   useEffect(() => {
-//     const unsubscribe = auth().onAuthStateChanged(async u => {
-//       if (!u) {
-//         setAuthState(false);
-//         return;
-//       }
-
-//       try {
-//         const snap = await database().ref(`users/${u.uid}`).once('value');
-
-//         const role = snap.val()?.role || 'user';
-
-//         // ⭐ SINGLE UPDATE (no flicker)
-//         setAuthState({
-//           user: u,
-//           role,
-//         });
-//       } catch (e) {
-//         setAuthState({
-//           user: u,
-//           role: 'user',
-//         });
-//       }
-//     });
-
-//     return unsubscribe;
-//   }, []);
-
-//   // ⭐ LOADING
-//   if (authState === null) {
-//     return <AppLoader />;
-//   }
-
-//   // ⭐ LOGGED OUT
-//   if (authState === false) {
-//     return (
-//       <NavigationContainer>
-//         <AuthStack />
-//         <Toast />
-//       </NavigationContainer>
-//     );
-//   }
-
-//   // ⭐ LOGGED IN (NO FLASH GUARANTEED)
-//   return (
-//     <NavigationContainer>
-//       {authState.role === 'representer' ? <RepStack /> : <UserStack />}
-//       <Toast />
-//     </NavigationContainer>
-//   );
-// }
-
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
+import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
-
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import AuthStack from './src/navigation/AuthStack';
 import UserStack from './src/navigation/UserStack';
 import RepStack from './src/navigation/RepStack';
-
 import AppLoader from './src/components/AppLoader';
 import OnboardingModal from './src/screens/auth/OnboardingModal';
 import Toast from 'react-native-toast-message';
+import { PermissionsAndroid } from 'react-native';
 
 export default function App() {
   const [authState, setAuthState] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userData, setUserData] = useState(null);
 
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    notifee.createChannel({
+      id: 'default',
+      name: 'Default',
+      importance: AndroidImportance.HIGH,
+    });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('🔥 FOREGROUND MESSAGE:', remoteMessage);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // ========================================
+  // 🔥 AUTH + TOKEN SAVE (CORRECT PLACE)
+  // ========================================
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(async u => {
       if (!u) {
@@ -95,7 +56,7 @@ export default function App() {
 
       let data = snap.val();
 
-      // ⭐ FIRST TIME CREATE PROFILE
+      // first time profile create
       if (!data) {
         data = {
           email: u.email,
@@ -110,9 +71,27 @@ export default function App() {
         await ref.set(data);
       }
 
+      // ====================================
+      // 🔥 SAVE FCM TOKEN (after login)
+      // ====================================
+      try {
+        await messaging().requestPermission();
+
+        const token = await messaging().getToken();
+
+        console.log('🔥 FCM TOKEN:', token);
+
+        await ref.update({ fcmToken: token });
+
+        console.log('✅ Token saved');
+      } catch (e) {
+        console.log('Token error:', e);
+      }
+
+      // ====================================
+
       setUserData({ ...data, uid: u.uid });
 
-      // ⭐ BLOCK USER IF PROFILE NOT COMPLETE
       if (!data.profileComplete) {
         setShowOnboarding(true);
       }
@@ -126,10 +105,10 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // loading
+  // ========================================
+
   if (authState === null) return <AppLoader />;
 
-  // logged out
   if (authState === false)
     return (
       <NavigationContainer>
@@ -142,7 +121,6 @@ export default function App() {
     <NavigationContainer>
       {authState.role === 'representer' ? <RepStack /> : <UserStack />}
 
-      {/* ⭐ FIRST TIME MODAL */}
       {showOnboarding && (
         <OnboardingModal
           user={userData}

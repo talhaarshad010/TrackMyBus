@@ -6,113 +6,47 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
-  PermissionsAndroid, // ← yeh built-in import karo
-  Linking, // settings kholne ke liye
+  PermissionsAndroid,
 } from 'react-native';
 
 export default function RepHomeScreen({ navigation }) {
   const requestLocationPermissions = async () => {
-    if (Platform.OS !== 'android') return true;
-
     try {
-      // Step 1: Foreground location (ACCESS_FINE_LOCATION)
-      const fineStatus = await PermissionsAndroid.check(
+      if (Platform.OS !== 'android') return true;
+
+      const version = Number(Platform.Version);
+
+      // Android < 6
+      if (version < 23) return true;
+
+      const fine = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       );
 
-      if (!fineStatus) {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message:
-              'This app needs access to your location to share live bus position.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-            Alert.alert(
-              'Permission Blocked',
-              'Location permission is permanently denied. Please enable it in Settings → Apps → Your App → Permissions',
-              [
-                {
-                  text: 'Open Settings',
-                  onPress: () => Linking.openSettings(),
-                },
-                { text: 'Cancel', style: 'cancel' },
-              ],
-            );
-          } else {
-            Alert.alert(
-              'Permission Denied',
-              'Location access is required to start trip.',
-            );
-          }
-          return false;
-        }
+      if (fine !== PermissionsAndroid.RESULTS.GRANTED) {
+        Alert.alert('Location permission required');
+        return false;
       }
 
-      // Step 2: Background location (Android 10+ i.e. API 29+)
-      if (Platform.Version >= 29) {
-        const bgStatus = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-        );
-
-        if (!bgStatus) {
-          const bgGranted = await PermissionsAndroid.request(
+      // Step 2 — Background (Android 10+)
+      if (version >= 29) {
+        setTimeout(async () => {
+          await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-            {
-              title: 'Background Location',
-              message:
-                'Allow background location so the app can share your position even when minimized or screen is off.',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
           );
-
-          if (bgGranted !== PermissionsAndroid.RESULTS.GRANTED) {
-            if (bgGranted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-              Alert.alert(
-                'Background Permission Blocked',
-                'Please enable background location in Settings.',
-                [
-                  {
-                    text: 'Open Settings',
-                    onPress: () => Linking.openSettings(),
-                  },
-                  { text: 'Cancel', style: 'cancel' },
-                ],
-              );
-            } else {
-              Alert.alert(
-                'Permission Needed',
-                'Background location is required for live tracking.',
-              );
-            }
-            return false;
-          }
-        }
+        }, 500);
       }
 
       return true;
-    } catch (err) {
-      console.warn('Permission error:', err);
-      Alert.alert(
-        'Error',
-        'Something went wrong while requesting permissions.',
-      );
+    } catch (e) {
+      console.log(e);
       return false;
     }
   };
 
   const handleStart = async () => {
     const granted = await requestLocationPermissions();
-
+    console.log('granted:', granted);
     if (granted) {
       navigation.replace('TripActive');
     }

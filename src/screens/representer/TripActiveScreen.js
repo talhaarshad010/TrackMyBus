@@ -1,30 +1,71 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  PermissionsAndroid,
+  Platform,
+} from 'react-native';
 
 import database from '@react-native-firebase/database';
 import { startTracking, stopTracking } from '../../services/locationService';
 
 export default function TripActiveScreen({ navigation }) {
   const [speed, setSpeed] = useState(0);
+  const [tracking, setTracking] = useState(false);
 
   // ==========================
-  // START when mounted
+  // LOCATION PERMISSION
+  // ==========================
+  const requestPermission = async () => {
+    if (Platform.OS !== 'android') return true;
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  };
+
+  // ==========================
+  // START ON MOUNT
   // ==========================
   useEffect(() => {
-    startTracking();
+    let ref;
 
-    const ref = database().ref('bus/location');
+    const init = async () => {
+      console.log('📍 TripActive mounted');
 
-    const listener = ref.on('value', snap => {
-      const data = snap.val();
-      if (data?.speed) setSpeed(data.speed);
-    });
+      const allowed = await requestPermission();
+      if (!allowed) return;
 
+      await startTracking();
+      setTracking(true);
+
+      // Firebase listener
+      ref = database().ref('bus/location');
+
+      ref.on('value', snap => {
+        const data = snap.val();
+
+        // safe speed handling
+        setSpeed(data?.speed ?? 0);
+      });
+    };
+
+    init();
+
+    // CLEANUP
     return () => {
-      ref.off('value', listener);
+      console.log('🛑 TripActive unmounted');
+      if (ref) ref.off();
+      stopTracking(); // auto stop if screen closed
     };
   }, []);
 
+  // ==========================
+  // STOP BUTTON
   // ==========================
   const handleStop = async () => {
     await stopTracking();
@@ -34,7 +75,9 @@ export default function TripActiveScreen({ navigation }) {
   // ==========================
   return (
     <View style={styles.container}>
-      <Text style={styles.status}>Sharing Live Location...</Text>
+      <Text style={styles.status}>
+        {tracking ? 'Sharing Live Location...' : 'Starting GPS...'}
+      </Text>
 
       <Text style={styles.speed}>Speed: {Math.round(speed * 3.6)} km/h</Text>
 

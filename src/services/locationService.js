@@ -1,47 +1,176 @@
-import Geolocation from 'react-native-geolocation-service';
+// import { getDistance } from 'geolib';
+// import { NativeModules, NativeEventEmitter } from 'react-native';
+// import database from '@react-native-firebase/database';
+// import { STOPS } from '../data/stops';
+
+// const { LocationModule } = NativeModules;
+
+// const emitter = new NativeEventEmitter(LocationModule);
+// const ref = database().ref('bus/location');
+
+// const eventRef = database().ref('bus/events');
+// let lastStopId = null;
+
+// let subscription = null;
+
+// // ==========================
+// // START TRACKING
+// // ==========================
+// export const startTracking = () => {
+//   eventRef.push({
+//     type: 'START',
+//     time: Date.now(),
+//   });
+//   LocationModule.startTracking();
+
+//   // 🔥 auto OFF on crash / disconnect
+//   ref.onDisconnect().update({
+//     active: false,
+//   });
+
+//   subscription = emitter.addListener('onLocationUpdate', data => {
+//     const { lat, lng } = data;
+//     console.log('LOCATION =>', data);
+
+//     checkStops(lat, lng);
+
+//     // ✅ always use SAME ref
+//     ref.set({
+//       ...data,
+//       active: true,
+//       updatedAt: Date.now(),
+//     });
+//   });
+// };
+
+// // ==========================
+// // STOP TRACKING
+// // ==========================
+// export const stopTracking = () => {
+//   LocationModule.stopTracking();
+
+//   subscription?.remove();
+
+//   // 🔥 immediate OFF (important)
+//   ref.update({
+//     active: false,
+//   });
+// };
+
+// export const checkStops = (lat, lng) => {
+//   STOPS.forEach(stop => {
+//     const dist = getDistance(
+//       { latitude: lat, longitude: lng },
+//       { latitude: stop.lat, longitude: stop.lng },
+//     );
+
+//     if (dist < 80 && lastStopId !== stop.id) {
+//       lastStopId = stop.id;
+
+//       eventRef.push({
+//         type: 'STOP',
+//         stopName: stop.name,
+//         time: Date.now(),
+//       });
+//     }
+//   });
+// };
+
+import { getDistance } from 'geolib';
+import { NativeModules, NativeEventEmitter } from 'react-native';
 import database from '@react-native-firebase/database';
+import { STOPS } from '../data/stops';
 
-let watchId = null;
+const { LocationModule } = NativeModules;
 
+const emitter = new NativeEventEmitter(LocationModule);
+
+const ref = database().ref('bus/location');
+const eventRef = database().ref('bus/events');
+
+let subscription = null;
+let lastStopId = null;
+let isTracking = false;
+
+// =====================================
+// START TRACKING
+// =====================================
 export const startTracking = () => {
-  try {
-    if (watchId) return;
+  if (isTracking) return; // 🔥 prevent duplicate starts
 
-    watchId = Geolocation.watchPosition(
-      pos => {
-        const { latitude, longitude, speed } = pos.coords;
+  console.log('🚀 Trip Started');
 
-        database()
-          .ref('bus/location')
-          .set({
-            lat: latitude,
-            lng: longitude,
-            speed: speed || 0,
-            active: true,
-            updatedAt: Date.now(),
-          });
-      },
-      error => {
-        console.log('Tracking error:', error);
-      },
-      {
-        enableHighAccuracy: false,
-        distanceFilter: 20,
-        interval: 5000,
-        fastestInterval: 4000,
-      },
-    );
-  } catch (e) {
-    console.log('startTracking crash:', e);
-  }
+  isTracking = true;
+  lastStopId = null; // 🔥 reset stops
+
+  // 🔥 push START event
+  eventRef.push({
+    type: 'START',
+    time: Date.now(),
+  });
+
+  LocationModule.startTracking();
+
+  ref.onDisconnect().update({ active: false });
+
+  subscription = emitter.addListener('onLocationUpdate', data => {
+    const { lat, lng } = data;
+
+    checkStops(lat, lng);
+
+    ref.set({
+      ...data,
+      active: true,
+      updatedAt: Date.now(),
+    });
+  });
 };
 
+// =====================================
+// STOP TRACKING
+// =====================================
 export const stopTracking = () => {
-  if (watchId) {
-    Geolocation.clearWatch(watchId);
-  }
+  if (!isTracking) return;
 
-  database().ref('bus/location').update({
-    active: false,
+  console.log('🛑 Trip Stopped');
+
+  isTracking = false;
+
+  LocationModule.stopTracking();
+
+  subscription?.remove();
+
+  ref.update({ active: false });
+
+  // 🔥 push END event (important for students)
+  eventRef.push({
+    type: 'END',
+    time: Date.now(),
   });
+};
+
+// =====================================
+// STOP DETECTION
+// =====================================
+const checkStops = (lat, lng) => {
+  for (const stop of STOPS) {
+    const dist = getDistance(
+      { latitude: lat, longitude: lng },
+      { latitude: stop.lat, longitude: stop.lng },
+    );
+
+    if (dist < 80 && lastStopId !== stop.id) {
+      lastStopId = stop.id;
+
+      console.log('🛑 STOP:', stop.name);
+
+      eventRef.push({
+        type: 'STOP',
+        stopName: stop.name,
+        time: Date.now(),
+      });
+
+      break; // 🔥 prevent multiple in same tick
+    }
+  }
 };
