@@ -1,95 +1,205 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   Alert,
   PermissionsAndroid,
+  Platform,
+  ScrollView,
 } from 'react-native';
 
+import auth from '@react-native-firebase/auth';
+import database from '@react-native-firebase/database';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 export default function RepHomeScreen({ navigation }) {
-  const requestLocationPermissions = async () => {
-    try {
-      if (Platform.OS !== 'android') return true;
+  const [active, setActive] = useState(false);
+  const [speed, setSpeed] = useState(0);
+  const user = auth().currentUser;
 
-      const version = Number(Platform.Version);
+  // ==========================
+  // LIVE BUS STATUS LISTENER
+  // ==========================
+  useEffect(() => {
+    const ref = database().ref('bus/location');
 
-      // Android < 6
-      if (version < 23) return true;
+    ref.on('value', snap => {
+      const data = snap.val();
 
-      const fine = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      );
+      if (!data) return;
 
-      if (fine !== PermissionsAndroid.RESULTS.GRANTED) {
-        Alert.alert('Location permission required');
-        return false;
-      }
+      setActive(data.active);
+      setSpeed(Math.round((data.speed ?? 0) * 3.6));
+    });
 
-      // Step 2 — Background (Android 10+)
-      if (version >= 29) {
-        setTimeout(async () => {
-          await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-          );
-        }, 500);
-      }
+    return () => ref.off();
+  }, []);
 
-      return true;
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
+  // ==========================
+  // PERMISSION
+  // ==========================
+  const requestPermission = async () => {
+    if (Platform.OS !== 'android') return true;
+
+    const fine = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    );
+
+    return fine === PermissionsAndroid.RESULTS.GRANTED;
   };
 
+  // ==========================
+  // START
+  // ==========================
   const handleStart = async () => {
-    const granted = await requestLocationPermissions();
-    console.log('granted:', granted);
-    if (granted) {
-      navigation.replace('TripActive');
-    }
+    const ok = await requestPermission();
+    if (ok) navigation.replace('TripActive');
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bus Offline</Text>
+  // ==========================
+  // LOGOUT
+  // ==========================
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure?', [
+      { text: 'Cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => await auth().signOut(),
+      },
+    ]);
+  };
 
-      <TouchableOpacity style={styles.startBtn} onPress={handleStart}>
-        <Text style={styles.startText}>Start Trip</Text>
+  // ==========================
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* HEADER */}
+      <Text style={styles.header}>🚌 Representative Dashboard</Text>
+      <Text style={styles.sub}>{user?.email}</Text>
+
+      {/* ================= STATS ================= */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statTitle}>Status</Text>
+          <Text
+            style={[
+              styles.statValue,
+              { color: active ? '#16a34a' : '#dc2626' },
+            ]}
+          >
+            {active ? 'Online' : 'Offline'}
+          </Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Text style={styles.statTitle}>Speed</Text>
+          <Text style={styles.statValue}>{speed} km/h</Text>
+        </View>
+      </View>
+
+      {/* ================= ACTIONS ================= */}
+      <TouchableOpacity style={styles.primaryBtn} onPress={handleStart}>
+        <Text style={styles.primaryText}>▶ Start Trip</Text>
       </TouchableOpacity>
-    </View>
+
+      <TouchableOpacity
+        style={styles.secondaryBtn}
+        onPress={() => navigation.navigate('TransferRep')}
+      >
+        <Text style={styles.secondaryText}>🔄 Transfer Representative</Text>
+      </TouchableOpacity>
+
+      {/* ================= LOGOUT ================= */}
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
-// styles same as before...
+// ================= STYLES =================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
   },
 
-  title: {
+  header: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 40,
+    textAlign: 'center',
   },
 
-  startBtn: {
+  sub: {
+    textAlign: 'center',
+    marginBottom: 30,
+    opacity: 0.6,
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+
+  statCard: {
+    width: '48%',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+
+  statTitle: {
+    opacity: 0.6,
+    marginBottom: 6,
+  },
+
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+
+  primaryBtn: {
     backgroundColor: '#000',
-    paddingVertical: 16,
-    paddingHorizontal: 60,
+    padding: 18,
     borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 14,
   },
 
-  startText: {
+  primaryText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+  },
+
+  secondaryBtn: {
+    backgroundColor: '#eee',
+    padding: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+
+  secondaryText: {
+    fontWeight: '600',
+  },
+
+  logoutBtn: {
+    marginTop: 30,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#dc2626',
+    alignItems: 'center',
+  },
+
+  logoutText: {
+    color: '#dc2626',
+    fontWeight: 'bold',
   },
 });

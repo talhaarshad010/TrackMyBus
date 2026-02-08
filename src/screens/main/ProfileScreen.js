@@ -12,7 +12,8 @@ import {
 
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 export default function ProfileScreen() {
   const [userData, setUserData] = useState(null);
 
@@ -69,14 +70,17 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* <StatusBar
+        edges={['top']}
+        backgroundColor="#000"
+        barStyle="light-content"
+      /> */}
+      <SafeAreaView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ===== HEADER (SAME UI) ===== */}
         <View style={styles.profileCard}>
-          {/* <Image
-            source={{ uri: 'https://i.pravatar.cc/150' }}
-            style={styles.avatar}
-          /> */}
-
           <Text style={styles.name}>{userData.name}</Text>
           <Text style={styles.email}>{userData.email}</Text>
         </View>
@@ -103,7 +107,7 @@ export default function ProfileScreen() {
         >
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </SafeAreaView>
 
       {/* ================================================= */}
       {/* 🔥 EDIT PROFILE MODAL */}
@@ -154,8 +158,10 @@ export default function ProfileScreen() {
       {/* ================================================= */}
 
       <Modal visible={logoutVisible} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
+        <View style={[styles.overlay, { alignItems: 'center' }]}>
+          <View
+            style={[styles.modalCard, { width: '60%', paddingVertical: '6%' }]}
+          >
             <Text style={styles.modalTitle}>Logout?</Text>
 
             <View
@@ -203,6 +209,7 @@ const styles = StyleSheet.create({
   // ======================
   profileCard: {
     alignItems: 'center',
+
     backgroundColor: '#000', // ✅ black header
     paddingVertical: 40,
     borderBottomLeftRadius: 30,

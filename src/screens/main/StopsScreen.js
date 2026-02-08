@@ -10,6 +10,7 @@ import {
 
 import { getDistance } from 'geolib';
 import { STOPS } from '../../data/stops';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DEFAULT_LOCATION = {
   latitude: 24.8607,
@@ -56,7 +57,7 @@ const StopsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Bus Stops</Text>
 
       <TextInput
@@ -75,7 +76,7 @@ const StopsScreen = () => {
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

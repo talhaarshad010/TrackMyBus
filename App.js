@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
+import firebase from '@react-native-firebase/app';
 import messaging from '@react-native-firebase/messaging';
 import database from '@react-native-firebase/database';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import AuthStack from './src/navigation/AuthStack';
 import UserStack from './src/navigation/UserStack';
 import RepStack from './src/navigation/RepStack';
-import AppLoader from './src/components/AppLoader';
 import OnboardingModal from './src/screens/auth/OnboardingModal';
 import Toast from 'react-native-toast-message';
-import { PermissionsAndroid } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
+import SplashScreen from './src/components/SplashScreen';
+console.log('Firebase apps:', firebase.apps);
 
 export default function App() {
   const [authState, setAuthState] = useState(null);
@@ -107,28 +109,42 @@ export default function App() {
 
   // ========================================
 
-  if (authState === null) return <AppLoader />;
+  // if (authState === null) return <AppLoader />;
 
   if (authState === false)
     return (
-      <NavigationContainer>
-        <AuthStack />
-        <Toast />
-      </NavigationContainer>
+      <>
+        <NavigationContainer>
+          <AuthStack />
+          <Toast />
+        </NavigationContainer>
+        <SplashScreen />
+      </>
     );
 
   return (
-    <NavigationContainer>
-      {authState.role === 'representer' ? <RepStack /> : <UserStack />}
+    <>
+      <NavigationContainer>
+        {authState === false && <AuthStack />}
 
-      {showOnboarding && (
-        <OnboardingModal
-          user={userData}
-          onComplete={() => setShowOnboarding(false)}
-        />
-      )}
+        {authState && (
+          <>
+            {authState.role === 'representer' ? <RepStack /> : <UserStack />}
 
-      <Toast />
-    </NavigationContainer>
+            {showOnboarding && (
+              <OnboardingModal
+                user={userData}
+                onComplete={() => setShowOnboarding(false)}
+              />
+            )}
+          </>
+        )}
+
+        <Toast />
+      </NavigationContainer>
+
+      {/* Always show splash on top */}
+      <SplashScreen />
+    </>
   );
 }
