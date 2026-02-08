@@ -14,7 +14,8 @@ export const showNotification = async (title, body) => {
 
     android: {
       channelId: 'default',
-      smallIcon: 'ic_launcher',
+      smallIcon: 'ic_notification',
+      largeIcon: 'ic_launcher',
 
       importance: AndroidImportance.HIGH,
       visibility: AndroidVisibility.PUBLIC,
