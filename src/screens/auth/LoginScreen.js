@@ -114,6 +114,8 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   header: {
     marginBottom: 28,
+    justifyContent: 'center',
+    // alignItems: 'center',
   },
 
   title: {
