@@ -15,9 +15,6 @@ export default function TripActiveScreen({ navigation }) {
   const [speed, setSpeed] = useState(0);
   const [tracking, setTracking] = useState(false);
 
-  // ==========================
-  // LOCATION PERMISSION
-  // ==========================
   const requestPermission = async () => {
     if (Platform.OS !== 'android') return true;
 
@@ -28,9 +25,6 @@ export default function TripActiveScreen({ navigation }) {
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   };
 
-  // ==========================
-  // START ON MOUNT
-  // ==========================
   useEffect(() => {
     let ref;
 
@@ -43,13 +37,11 @@ export default function TripActiveScreen({ navigation }) {
       await startTracking();
       setTracking(true);
 
-      // Firebase listener
       ref = database().ref('bus/location');
 
       ref.on('value', snap => {
         const data = snap.val();
 
-        // safe speed handling
         setSpeed(data?.speed ?? 0);
       });
     };
@@ -60,13 +52,10 @@ export default function TripActiveScreen({ navigation }) {
     return () => {
       console.log('🛑 TripActive unmounted');
       if (ref) ref.off();
-      stopTracking(); // auto stop if screen closed
+      stopTracking();
     };
   }, []);
 
-  // ==========================
-  // STOP BUTTON
-  // ==========================
   const handleStop = async () => {
     await stopTracking();
     navigation.replace('RepHome');
@@ -75,11 +64,11 @@ export default function TripActiveScreen({ navigation }) {
   // ==========================
   return (
     <View style={styles.container}>
-      <Text style={styles.status}>
-        {tracking ? 'Sharing Live Location...' : 'Starting GPS...'}
-      </Text>
+      <View style={styles.card}>
+        <Text style={styles.live}>🟢 Live Tracking</Text>
 
-      <Text style={styles.speed}>Speed: {Math.round(speed * 3.6)} km/h</Text>
+        <Text style={styles.speed}>{Math.round(speed * 3.6)} km/h</Text>
+      </View>
 
       <TouchableOpacity style={styles.stopBtn} onPress={handleStop}>
         <Text style={styles.stopText}>Stop Trip</Text>
@@ -123,5 +112,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  card: {
+    backgroundColor: '#fff',
+    padding: 30,
+    borderRadius: 18,
+    alignItems: 'center',
+    elevation: 5,
+  },
+
+  live: {
+    color: 'green',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+
+  speed: {
+    fontSize: 40,
+    fontWeight: 'bold',
+  },
+
+  stopBtn: {
+    marginTop: 40,
+    backgroundColor: '#FF3B30',
+    padding: 18,
+    borderRadius: 14,
+    alignItems: 'center',
   },
 });
